@@ -9,13 +9,17 @@ interface PushButtonProps {
   requestTiming?: 'button-click' | 'delayed' | 'scroll' | 'custom';
   delayMs?: number; // delayed の場合の遅延時間（ミリ秒）
   onRequestPermission?: () => void; // カスタムタイミング用のコールバック
+  onSubscribeSuccess?: (playerId: string) => void; // 通知許可成功時のコールバック
+  redirectUrl?: string; // 通知許可後のリダイレクト先URL
 }
 
 export default function PushButton({ 
   appId, 
   requestTiming = 'button-click',
   delayMs = 3000,
-  onRequestPermission
+  onRequestPermission,
+  onSubscribeSuccess,
+  redirectUrl
 }: PushButtonProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -149,6 +153,22 @@ export default function PushButton({
             const userId = await OneSignal.getPlayerId();
             if (userId) {
               setPlayerId(userId);
+              
+              // 通知許可成功時のコールバックを実行
+              if (onSubscribeSuccess) {
+                onSubscribeSuccess(userId);
+              }
+              
+              // リダイレクト先が指定されている場合は遷移
+              if (redirectUrl) {
+                setTimeout(() => {
+                  // Player IDをURLパラメータとして渡す
+                  const url = redirectUrl.includes('?') 
+                    ? `${redirectUrl}&playerId=${userId}`
+                    : `${redirectUrl}?playerId=${userId}`;
+                  window.location.href = url;
+                }, 1000); // 1秒待ってから遷移（ユーザーに成功メッセージを見せるため）
+              }
             }
           }
         } catch (err) {

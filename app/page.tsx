@@ -166,7 +166,15 @@ export default function Home() {
           </div>
 
           {/* OneSignal統合エリア */}
-          <PushButton appId={oneSignalAppId} requestTiming="button-click" />
+          <PushButton 
+            appId={oneSignalAppId} 
+            requestTiming="button-click"
+            onSubscribeSuccess={(playerId) => {
+              console.log('通知許可成功！Player ID:', playerId);
+              // 通知許可成功時の処理（オプション）
+            }}
+            redirectUrl="/success" // 通知許可後に自動的に成功ページに遷移
+          />
 
           {/* デバッグ用：開発環境でのみ表示 */}
           {process.env.NODE_ENV === 'development' && (
