@@ -19,27 +19,32 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
   // OneSignal 初期化（Primer を完全 OFF）
   // ------------------------------------------------------
   useEffect(() => {
+    if (!appId) return;
+
     const init = async () => {
       try {
-        await OneSignal.init({
-          appId,
+        // react-onesignalの実際のAPIを使用
+        OneSignal.initialize(appId, {
           allowLocalhostAsSecureOrigin: true,
-          autoRegister: false,
-          promptOptions: {
-            slidedown: { enabled: false } // ← 英語のやつ完全 OFF
-          }
+          autoRegister: false, // Push Primerを完全にOFF
         });
 
         setIsInitialized(true);
 
-        // 初期購読状態を取得
-        const enabled = await OneSignal.User.Push.isEnabled();
-        setIsSubscribed(enabled);
+        // 少し待ってから初期購読状態を取得
+        setTimeout(async () => {
+          try {
+            const enabled = await OneSignal.isPushNotificationsEnabled();
+            setIsSubscribed(enabled);
 
-        if (enabled) {
-          const id = await OneSignal.User.getId();
-          if (id) setPlayerId(id);
-        }
+            if (enabled) {
+              const id = await OneSignal.getPlayerId();
+              if (id) setPlayerId(id);
+            }
+          } catch (err) {
+            console.error('状態取得エラー:', err);
+          }
+        }, 1000);
       } catch (err) {
         console.error('OneSignal init error:', err);
         setError('OneSignal初期化に失敗しました');
@@ -59,37 +64,58 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
     setError(null);
 
     try {
-      // Safari 必須：ユーザー操作中に permission を発火
-      await OneSignal.User.Push.enable();
+      // react-onesignalの実際のAPIを使用
+      await OneSignal.registerForPushNotifications();
 
-      // 許可されたか確認
-      const enabled = await OneSignal.User.Push.isEnabled();
-      setIsSubscribed(enabled);
-
-      if (enabled) {
-        const id = await OneSignal.User.getId();
-        console.log("Player ID:", id);
-
-        if (id) {
-          setPlayerId(id);
-
-          // リダイレクト指定がある場合
-          if (redirectUrl) {
-            const url = redirectUrl.includes("?")
-              ? `${redirectUrl}&playerId=${id}`
-              : `${redirectUrl}?playerId=${id}`;
-            window.location.href = url;
-          }
+      // 許可されたか確認（複数回チェック）
+      const checkEnabled = async (attempts = 0, maxAttempts = 10) => {
+        if (attempts >= maxAttempts) {
+          setLoading(false);
+          setError("通知許可の確認に時間がかかりすぎています");
+          return;
         }
-      } else {
-        setError("通知が許可されませんでした");
-      }
+
+        try {
+          const enabled = await OneSignal.isPushNotificationsEnabled();
+          
+          if (enabled) {
+            setIsSubscribed(true);
+            setLoading(false);
+
+            // Player IDを取得
+            const id = await OneSignal.getPlayerId();
+            console.log("Player ID:", id);
+
+            if (id) {
+              setPlayerId(id);
+
+              // リダイレクト指定がある場合
+              if (redirectUrl) {
+                const url = redirectUrl.includes("?")
+                  ? `${redirectUrl}&playerId=${id}`
+                  : `${redirectUrl}?playerId=${id}`;
+                window.location.href = url;
+              }
+            }
+          } else {
+            // まだ許可されていない場合、少し待ってから再チェック
+            setTimeout(() => checkEnabled(attempts + 1, maxAttempts), 500);
+          }
+        } catch (err) {
+          console.error("状態確認エラー:", err);
+          setTimeout(() => checkEnabled(attempts + 1, maxAttempts), 500);
+        }
+      };
+
+      // 少し待ってから初回チェックを開始
+      setTimeout(() => {
+        checkEnabled();
+      }, 500);
     } catch (e) {
       console.error("Enable error:", e);
       setError("通知の許可に失敗しました");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   // ------------------------------------------------------
@@ -97,7 +123,7 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
   // ------------------------------------------------------
   const handleUnsubscribe = async () => {
     try {
-      await OneSignal.User.Push.disable();
+      await OneSignal.setSubscription(false);
       setIsSubscribed(false);
       setPlayerId(null);
     } catch (err) {
