@@ -1,7 +1,7 @@
 {
-  "name": "無料特典アプリ",
-  "short_name": "無料特典",
-  "description": "無料特典を受け取れるPWAアプリケーション",
+  "name": "日本語学習 - プッシュ通知登録",
+  "short_name": "日本語学習",
+  "description": "日本語学習のコツや新しい教材の更新情報をプッシュ通知でお届けします",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -1,19 +1,17 @@
 {
-  "name": "pwa-cp",
+  "name": "jp-learning-push-notification",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "react-onesignal": "^1.0.7"
+    "react-dom": "^18.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -21,8 +19,8 @@
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.33",
-    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
   }
 }
+

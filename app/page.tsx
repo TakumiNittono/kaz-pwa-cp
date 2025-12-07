@@ -1,235 +1,221 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import PushButton from '@/components/PushButton';
+import NotificationPermission from '@/components/NotificationPermission';
+
+type Step = 1 | 2 | 3;
 
 export default function Home() {
-  // 環境変数からOneSignal App IDを取得
-  const oneSignalAppId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || '';
+  const [step, setStep] = useState<Step>(1);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  const lpUrl = process.env.NEXT_PUBLIC_JP_LEARNING_LP_URL || '';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // iOSデバイスかどうかを判定
-      const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      // デバイス判定
+      const userAgent = navigator.userAgent.toLowerCase();
+      const iOS = /iphone|ipad|ipod/.test(userAgent) || 
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      setIsIOS(iOS);
+      const android = /android/.test(userAgent);
 
-      // スタンドアロンモード（PWAとしてインストール済み）かどうかを判定
+      setIsIOS(iOS);
+      setIsAndroid(android);
+
+      // PWAとしてインストール済みかチェック
       const standalone = 
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://');
+
       setIsStandalone(standalone);
+
+      // PWAとして起動している場合は自動的にSTEP 2へ
+      if (standalone) {
+        setStep(2);
+      }
     }
   }, []);
 
-  // PWAとしてインストール済みの場合は通知許可画面のみ表示
-  if (isStandalone) {
+  // STEP 2完了時のコールバック
+  const handleNotificationSuccess = (id: string) => {
+    setPlayerId(id);
+    setStep(3);
+  };
+
+  // STEP 3: LPへの遷移
+  const handleGoToLP = () => {
+    if (lpUrl) {
+      window.location.href = lpUrl;
+    } else {
+      console.error('LP URLが設定されていません');
+    }
+  };
+
+  // STEP 1: ホーム画面に追加してもらう画面
+  if (step === 1) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
+            <div className="text-center mb-8">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">無料特典アプリ</h1>
-              <p className="text-gray-600">プッシュ通知を有効にして特典を受け取りましょう</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                ① ホーム画面に追加してください
+              </h1>
+              <p className="text-gray-600 text-lg">
+                このサイトをスマホのホーム画面に追加して、アプリとして使用してください
+              </p>
             </div>
-            <PushButton appId={oneSignalAppId} redirectUrl="/success" />
+
+            <div className="space-y-6 mb-8">
+              {isIOS ? (
+                // iPhone (Safari) の手順
+                <div className="bg-blue-50 rounded-xl p-6 border-2 border-blue-200">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">📱</span>
+                    iPhone (Safari) の場合
+                  </h2>
+                  <ol className="space-y-4 text-left">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">画面下の「共有」アイコン（□に↑）をタップ</p>
+                        <p className="text-sm text-gray-600 mt-1">Safariブラウザの画面下部中央にある共有ボタンをタップしてください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">「ホーム画面に追加」を選ぶ</p>
+                        <p className="text-sm text-gray-600 mt-1">共有メニューの中から「ホーム画面に追加」を選択してください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">「追加」を押す</p>
+                        <p className="text-sm text-gray-600 mt-1">確認画面が表示されたら、右上の「追加」ボタンをタップしてください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">4</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">ホーム画面からこのアプリを開いてください</p>
+                        <p className="text-sm text-gray-600 mt-1">ホーム画面に追加されたアプリアイコンをタップして起動してください</p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+              ) : isAndroid ? (
+                // Android (Chrome) の手順
+                <div className="bg-green-50 rounded-xl p-6 border-2 border-green-200">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">🤖</span>
+                    Android (Chrome) の場合
+                  </h2>
+                  <ol className="space-y-4 text-left">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">右上の「︙」メニューをタップ</p>
+                        <p className="text-sm text-gray-600 mt-1">Chromeブラウザの右上にあるメニューボタンをタップしてください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">「ホーム画面に追加」または「インストール」を選ぶ</p>
+                        <p className="text-sm text-gray-600 mt-1">メニューの中から「ホーム画面に追加」または「インストール」を選択してください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">指示に従って追加</p>
+                        <p className="text-sm text-gray-600 mt-1">確認画面が表示されたら、指示に従って追加を完了してください</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">4</span>
+                      <div>
+                        <p className="font-semibold text-gray-800">ホーム画面からこのアプリを開いてください</p>
+                        <p className="text-sm text-gray-600 mt-1">ホーム画面に追加されたアプリアイコンをタップして起動してください</p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+              ) : (
+                // PC/その他のデバイスの場合
+                <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">
+                    💻 PC/その他のデバイスの場合
+                  </h2>
+                  <p className="text-gray-700">
+                    このアプリはスマートフォン向けに最適化されています。スマートフォンからアクセスしてください。
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 「すでにホーム画面に追加した」ボタン */}
+            <div className="text-center">
+              <button
+                onClick={() => setStep(2)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-8 rounded-xl transition-colors"
+              >
+                すでにホーム画面に追加した
+              </button>
+            </div>
           </div>
         </div>
       </main>
     );
   }
 
-  // iOSデバイスで、まだインストールされていない場合：インストール方法を説明
-  if (isIOS) {
+  // STEP 2: 通知を許可させる画面
+  if (step === 2) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
-        {/* ヒーローセクション */}
-        <div className="pt-12 pb-8 px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              無料特典アプリ
-            </h1>
-            <p className="text-xl text-gray-600 mb-2">
-              ホーム画面に追加して
-            </p>
-            <p className="text-xl text-gray-600 font-semibold">
-              最新の特典情報を受け取りましょう
-            </p>
-          </div>
-        </div>
-
-        {/* インストール手順セクション */}
-        <div className="px-4 pb-12">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-10">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                  📱 インストール方法
-                </h2>
-                <p className="text-gray-600">簡単3ステップで完了</p>
-              </div>
-
-              <div className="space-y-8">
-                {/* ステップ1 */}
-                <div className="relative">
-                  <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">
-                        1
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-3">
-                        共有ボタンをタップ
-                      </h3>
-                      <p className="text-gray-600 mb-4 leading-relaxed">
-                        Safariブラウザの画面下部中央にある
-                        <span className="inline-block mx-1 px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono border border-gray-300">□↑</span>
-                        アイコン（共有ボタン）をタップしてください
-                      </p>
-                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border-2 border-gray-200">
-                        <div className="flex items-center justify-center gap-3">
-                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                            </svg>
-                          </div>
-                          <span className="text-lg font-semibold text-gray-700">共有</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {!isStandalone && (
-                    <div className="hidden md:block absolute left-8 top-16 w-0.5 h-8 bg-gradient-to-b from-blue-500 to-blue-400"></div>
-                  )}
-                </div>
-
-                {/* ステップ2 */}
-                <div className="relative">
-                  <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">
-                        2
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-3">
-                        「ホーム画面に追加」を選択
-                      </h3>
-                      <p className="text-gray-600 mb-4 leading-relaxed">
-                        共有メニューが開いたら、スクロールして
-                        <span className="inline-block mx-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-lg font-semibold border border-blue-300">ホーム画面に追加</span>
-                        をタップしてください
-                      </p>
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <span className="text-lg font-semibold text-blue-700">ホーム画面に追加</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {!isStandalone && (
-                    <div className="hidden md:block absolute left-8 top-16 w-0.5 h-8 bg-gradient-to-b from-indigo-500 to-indigo-400"></div>
-                  )}
-                </div>
-
-                {/* ステップ3 */}
-                <div className="relative">
-                  <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">
-                        ✓
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-3">
-                        完了！アプリを起動
-                      </h3>
-                      <p className="text-gray-600 mb-4 leading-relaxed">
-                        確認画面で
-                        <span className="inline-block mx-1 px-3 py-1 bg-green-100 text-green-800 rounded-lg font-semibold border border-green-300">追加</span>
-                        をタップしたら、ホーム画面に追加されたアプリアイコンをタップして起動してください
-                      </p>
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <span className="text-lg font-semibold text-green-700">インストール完了</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 重要なお知らせ */}
-              <div className="mt-10 pt-8 border-t-2 border-gray-200">
-                <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-5 border-2 border-yellow-300">
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0">
-                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-bold text-yellow-900 mb-1">重要</p>
-                      <p className="text-sm text-yellow-800 leading-relaxed">
-                        Safariブラウザで開いている必要があります。Chromeなどの他のブラウザでは「ホーム画面に追加」が表示されない場合があります。
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 次のステップ */}
-              <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
-                <p className="text-center text-blue-900 font-bold text-lg">
-                  ✨ インストール後は、ホーム画面からアプリを起動して<br className="md:hidden" />プッシュ通知を有効にしてください
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <NotificationPermission onSuccess={handleNotificationSuccess} />
       </main>
     );
   }
 
-  // その他のデバイス（Android、PCなど）の場合：通常の通知許可画面
+  // STEP 3: Success! ボタンと LP への遷移画面
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">無料特典アプリ</h1>
-            <p className="text-gray-600">プッシュ通知を有効にして特典を受け取りましょう</p>
-          </div>
-          <PushButton appId={oneSignalAppId} redirectUrl="/success" />
+      <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-md w-full text-center">
+        <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
         </div>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+          ③ 登録が完了しました！
+        </h1>
+        <p className="text-gray-600 mb-8 text-lg">
+          準備が整いました。下のボタンから日本語学習ページへ進んでください。
+        </p>
+        {playerId && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <p className="text-xs text-gray-500 mb-1">Player ID:</p>
+            <p className="text-sm font-mono break-all text-gray-700">{playerId}</p>
+          </div>
+        )}
+        <button
+          onClick={handleGoToLP}
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg shadow-lg transition-all transform hover:scale-105"
+        >
+          Success! 学習ページへ進む
+        </button>
       </div>
     </main>
   );
