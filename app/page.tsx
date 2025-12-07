@@ -16,27 +16,26 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       // スタンドアロンモードで実行されているか確認
       const checkInstalled = () => {
-        // 複数の方法でPWAインストール状態を確認
+        // 実際のPWAインストール状態のみを確認（ローカルストレージは使わない）
         const isStandalone = 
           window.matchMedia('(display-mode: standalone)').matches ||
           (window.navigator as any).standalone === true ||
-          document.referrer.includes('android-app://') ||
-          window.location.search.includes('pwa=true'); // デバッグ用
+          document.referrer.includes('android-app://');
         
-        // ローカルストレージにも保存（リロード時の判定用）
-        if (isStandalone) {
+        // デバッグ用: URLパラメータで強制設定
+        const debugInstalled = window.location.search.includes('pwa=true');
+        
+        const finalIsInstalled = isStandalone || debugInstalled;
+        
+        // 実際にインストールされている場合のみローカルストレージに保存
+        if (finalIsInstalled) {
           localStorage.setItem('pwa-installed', 'true');
         }
-        
-        // ローカルストレージからも確認
-        const stored = localStorage.getItem('pwa-installed') === 'true';
-        const finalIsInstalled = isStandalone || stored;
         
         console.log('PWAインストール状態:', {
           standalone: window.matchMedia('(display-mode: standalone)').matches,
           navigatorStandalone: (window.navigator as any).standalone,
           referrer: document.referrer,
-          stored,
           final: finalIsInstalled
         });
         
@@ -253,11 +252,6 @@ export default function Home() {
           {/* OneSignal統合エリア */}
           <PushButton 
             appId={oneSignalAppId} 
-            requestTiming="button-click"
-            onSubscribeSuccess={(playerId) => {
-              console.log('通知許可成功！Player ID:', playerId);
-              // 通知許可成功時の処理（オプション）
-            }}
             redirectUrl="/success" // 通知許可後に自動的に成功ページに遷移
           />
 
