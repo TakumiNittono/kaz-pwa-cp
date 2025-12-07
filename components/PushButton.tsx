@@ -138,68 +138,108 @@ export default function PushButton({
     setError(null);
 
     try {
-      // 通知許可をリクエスト
       console.log('通知許可をリクエスト中...');
+      
+      // ブラウザの通知許可APIも直接確認
+      const browserPermission = await Notification.requestPermission();
+      console.log('ブラウザ通知許可状態:', browserPermission);
+
+      // OneSignalの通知許可をリクエスト
       await OneSignal.registerForPushNotifications();
 
       // 通知許可の状態を複数回チェック（ブラウザのダイアログでユーザーが選択するまで待つ）
-      const checkSubscription = async (attempts = 0, maxAttempts = 10) => {
+      const checkSubscription = async (attempts = 0, maxAttempts = 20) => {
+        console.log(`通知許可状態チェック開始 (試行 ${attempts + 1}/${maxAttempts})`);
+
         if (attempts >= maxAttempts) {
           console.error('通知許可の確認がタイムアウトしました');
           setIsLoading(false);
+          setError('通知許可の確認に時間がかかりすぎています。ページをリロードしてください。');
           return;
         }
 
         try {
-          const subscription = await OneSignal.isPushNotificationsEnabled();
-          console.log(`通知許可状態チェック (${attempts + 1}/${maxAttempts}):`, subscription);
+          // ブラウザの通知許可状態も確認
+          const browserPerm = Notification.permission;
+          console.log(`ブラウザ許可状態 (${attempts + 1}):`, browserPerm);
 
-          if (subscription) {
-            // 通知許可が成功した
+          // OneSignalの購読状態を確認
+          const subscription = await OneSignal.isPushNotificationsEnabled();
+          console.log(`OneSignal購読状態 (${attempts + 1}):`, subscription);
+
+          // ブラウザとOneSignalの両方が許可されている場合
+          if (browserPerm === 'granted' && subscription) {
+            console.log('✅ 通知許可が確認されました！');
             setIsSubscribed(true);
             setIsLoading(false);
 
-            // Player IDを取得
-            const userId = await OneSignal.getPlayerId();
+            // Player IDを取得（複数回試行）
+            let userId: string | null = null;
+            for (let i = 0; i < 5; i++) {
+              try {
+                userId = await OneSignal.getPlayerId();
+                if (userId) {
+                  console.log('Player ID取得成功:', userId);
+                  break;
+                }
+              } catch (err) {
+                console.log(`Player ID取得試行 ${i + 1}/5 失敗`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            }
+
             if (userId) {
               setPlayerId(userId);
-              console.log('通知許可成功！Player ID:', userId);
+              console.log('🎉 通知許可成功！Player ID:', userId);
 
               // 通知許可成功時のコールバックを実行
               if (onSubscribeSuccess) {
+                console.log('コールバック実行:', onSubscribeSuccess);
                 onSubscribeSuccess(userId);
               }
 
               // リダイレクト先が指定されている場合は遷移
               if (redirectUrl) {
-                console.log('リダイレクト先:', redirectUrl);
-                setTimeout(() => {
-                  // Player IDをURLパラメータとして渡す
-                  const url = redirectUrl.includes('?') 
-                    ? `${redirectUrl}&playerId=${userId}`
-                    : `${redirectUrl}?playerId=${userId}`;
-                  console.log('ページ遷移:', url);
-                  window.location.href = url;
-                }, 1500); // 1.5秒待ってから遷移（ユーザーに成功メッセージを見せるため）
+                console.log('📍 リダイレクト先:', redirectUrl);
+                const url = redirectUrl.includes('?') 
+                  ? `${redirectUrl}&playerId=${userId}`
+                  : `${redirectUrl}?playerId=${userId}`;
+                console.log('🚀 ページ遷移実行:', url);
+                
+                // すぐに遷移（成功メッセージは遷移先で表示）
+                window.location.href = url;
+              } else {
+                console.log('⚠️ redirectUrlが設定されていません');
               }
             } else {
-              console.warn('Player IDが取得できませんでした');
+              console.warn('⚠️ Player IDが取得できませんでしたが、遷移を実行します');
+              if (redirectUrl) {
+                window.location.href = redirectUrl;
+              }
             }
+          } else if (browserPerm === 'denied') {
+            // ユーザーが拒否した場合
+            console.log('❌ 通知が拒否されました');
+            setIsLoading(false);
+            setError('通知が拒否されました。ブラウザの設定から通知を許可してください。');
           } else {
             // まだ許可されていない場合、少し待ってから再チェック
-            setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 500);
+            console.log(`⏳ まだ許可されていません。再チェックします... (${attempts + 1}/${maxAttempts})`);
+            setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 300);
           }
         } catch (err) {
           console.error('状態確認エラー:', err);
-          setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 500);
+          setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 300);
         }
       };
 
-      // 初回チェックを開始
-      checkSubscription();
+      // 少し待ってから初回チェックを開始（ブラウザのダイアログが閉じるのを待つ）
+      setTimeout(() => {
+        checkSubscription();
+      }, 500);
     } catch (err) {
       console.error('通知登録エラー:', err);
-      setError('通知の登録に失敗しました');
+      setError('通知の登録に失敗しました: ' + (err as Error).message);
       setIsLoading(false);
     }
   };

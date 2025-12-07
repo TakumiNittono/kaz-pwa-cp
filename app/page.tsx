@@ -178,16 +178,26 @@ export default function Home() {
 
           {/* デバッグ用：開発環境でのみ表示 */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('pwa-installed');
-                  setIsInstalled(false);
-                }}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                [デバッグ] インストール状態をリセット
-              </button>
+            <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('pwa-installed');
+                    setIsInstalled(false);
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 border border-gray-300 rounded"
+                >
+                  [デバッグ] インストール状態をリセット
+                </button>
+                <button
+                  onClick={() => {
+                    window.location.href = '/success?playerId=test-debug';
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-700 px-2 py-1 border border-blue-300 rounded"
+                >
+                  [デバッグ] 成功ページをテスト
+                </button>
+              </div>
             </div>
           )}
         </div>
