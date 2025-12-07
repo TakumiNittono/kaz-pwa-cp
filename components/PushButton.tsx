@@ -64,10 +64,9 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
     setError(null);
 
     try {
-      // react-onesignalの実際のAPIを使用
       await OneSignal.registerForPushNotifications();
 
-      // 許可されたか確認（複数回チェック）
+      // 許可されたか確認
       const checkEnabled = async (attempts = 0, maxAttempts = 10) => {
         if (attempts >= maxAttempts) {
           setLoading(false);
@@ -82,14 +81,12 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
             setIsSubscribed(true);
             setLoading(false);
 
-            // Player IDを取得
             const id = await OneSignal.getPlayerId();
             console.log("Player ID:", id);
-
             if (id) {
               setPlayerId(id);
-
-              // リダイレクト指定がある場合
+              
+              // リダイレクト指定がある場合のみ遷移
               if (redirectUrl) {
                 const url = redirectUrl.includes("?")
                   ? `${redirectUrl}&playerId=${id}`
@@ -98,7 +95,6 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
               }
             }
           } else {
-            // まだ許可されていない場合、少し待ってから再チェック
             setTimeout(() => checkEnabled(attempts + 1, maxAttempts), 500);
           }
         } catch (err) {
@@ -107,7 +103,6 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
         }
       };
 
-      // 少し待ってから初回チェックを開始
       setTimeout(() => {
         checkEnabled();
       }, 500);
@@ -133,43 +128,44 @@ export default function PushButton({ appId, redirectUrl }: PushButtonProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
       {error && (
-        <div className="bg-red-100 border border-red-300 p-4 rounded text-red-700 text-sm">
+        <div className="bg-red-100 border border-red-300 p-3 rounded text-red-700 text-sm">
           {error}
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <h2 className="text-lg font-bold text-center mb-4">プッシュ通知設定</h2>
+      <h2 className="text-xl font-bold text-center mb-4">プッシュ通知設定</h2>
 
-        {!isInitialized ? (
-          <div className="text-center text-gray-600">初期化中...</div>
-        ) : isSubscribed ? (
-          <div className="text-center space-y-4">
-            <p className="text-green-700 font-semibold">✓ 通知が有効です</p>
-            {playerId && (
-              <p className="text-xs font-mono break-all text-green-600">
-                ID: {playerId}
+      {!isInitialized ? (
+        <div className="text-center text-gray-600">初期化中...</div>
+      ) : isSubscribed ? (
+        <div className="text-center space-y-3">
+          <p className="text-green-700 font-semibold">✓ 通知が有効です</p>
+          {playerId && (
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-xs text-gray-600 mb-1">Player ID:</p>
+              <p className="text-sm font-mono break-all text-gray-800">
+                {playerId}
               </p>
-            )}
-            <button
-              onClick={handleUnsubscribe}
-              className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded"
-            >
-              通知を無効にする
-            </button>
-          </div>
-        ) : (
+            </div>
+          )}
           <button
-            onClick={handleSubscribe}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg"
+            onClick={handleUnsubscribe}
+            className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded"
           >
-            {loading ? "処理中..." : "🔔 通知を許可する"}
+            通知を無効にする
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <button
+          onClick={handleSubscribe}
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded"
+        >
+          {loading ? "処理中..." : "通知を許可する"}
+        </button>
+      )}
     </div>
   );
 }
