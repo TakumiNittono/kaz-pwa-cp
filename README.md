@@ -60,9 +60,17 @@ npm run dev
 │   ├── page.tsx            # メインページ（3ステップの画面切り替え）
 │   └── globals.css         # グローバルスタイル
 ├── components/
-│   ├── NotificationPermission.tsx  # 通知許可コンポーネント
+│   ├── NotificationPermission.tsx  # STEP 2: 通知許可コンポーネント
+│   ├── Step1InstallGuide.tsx       # STEP 1: インストール手順コンポーネント
+│   ├── Step3Success.tsx            # STEP 3: 成功画面コンポーネント
 │   ├── OneSignalScript.tsx         # OneSignal SDK読み込み
 │   └── ServiceWorkerRegistration.tsx  # Service Worker登録
+├── hooks/
+│   └── useOneSignal.ts     # OneSignal初期化・通知許可管理のカスタムフック
+├── utils/
+│   └── device.ts           # デバイス判定ユーティリティ
+├── constants/
+│   └── index.ts            # アプリケーション定数
 ├── public/
 │   ├── manifest.json       # PWAマニフェスト
 │   ├── sw.js              # Service Worker

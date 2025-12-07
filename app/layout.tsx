@@ -3,17 +3,18 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import OneSignalScript from '@/components/OneSignalScript';
+import { APP_CONFIG } from '@/constants';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: '日本語学習 - プッシュ通知登録',
-  description: '日本語学習のコツや新しい教材の更新情報をプッシュ通知でお届けします',
+  title: APP_CONFIG.TITLE,
+  description: APP_CONFIG.DESCRIPTION,
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: '日本語学習',
+    title: APP_CONFIG.SHORT_NAME,
   },
 };
 
@@ -36,7 +37,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="日本語学習" />
+        <meta name="apple-mobile-web-app-title" content={APP_CONFIG.SHORT_NAME} />
         <OneSignalScript />
       </head>
       <body className={inter.className}>
