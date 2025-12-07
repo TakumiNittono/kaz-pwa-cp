@@ -6,13 +6,13 @@ import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PWA Push Notification App',
-  description: 'OneSignal対応のPWAアプリケーション',
+  title: '無料特典アプリ',
+  description: '無料特典を受け取れるPWAアプリケーション',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'PWA Push',
+    title: '無料特典',
   },
 };
 
@@ -32,9 +32,10 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="PWA Push" />
+        <meta name="apple-mobile-web-app-title" content="無料特典" />
       </head>
       <body className={inter.className}>
         <ServiceWorkerRegistration />

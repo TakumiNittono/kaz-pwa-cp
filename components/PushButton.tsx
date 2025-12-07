@@ -32,17 +32,35 @@ export default function PushButton({
           allowLocalhostAsSecureOrigin: true,
           notificationClickHandlerMatch: 'origin',
           notificationClickHandlerAction: 'navigate',
-          autoRegister: false, // 自動登録を無効化（手動でボタンを押した時だけ通知許可をリクエスト）
+          autoRegister: true, // Push Primerを自動表示
         });
 
         setIsInitialized(true);
 
-        // 少し待ってから状態を取得
+        // 少し待ってから状態を取得とPush Primerを表示
         setTimeout(async () => {
           try {
             // 現在の購読状態を取得
             const subscription = await OneSignal.isPushNotificationsEnabled();
             setIsSubscribed(subscription);
+
+            // まだ購読していない場合、Push Primerを表示
+            if (!subscription) {
+              try {
+                // OneSignalのネイティブAPIからPush Primerを表示
+                // window.OneSignalはreact-onesignalが初期化後に利用可能
+                const oneSignalNative = (window as any).OneSignal;
+                if (oneSignalNative && typeof oneSignalNative.showSlidedownPrompt === 'function') {
+                  await oneSignalNative.showSlidedownPrompt();
+                  console.log('Push Primerを表示しました');
+                } else {
+                  // フォールバック: autoRegisterがtrueなら自動的に表示される
+                  console.log('Push Primerは自動表示されます（autoRegister: true）');
+                }
+              } catch (promptErr) {
+                console.log('Push Primer表示エラー（無視可能）:', promptErr);
+              }
+            }
 
             // Player IDを取得
             if (subscription) {
@@ -54,7 +72,7 @@ export default function PushButton({
           } catch (err) {
             console.error('状態取得エラー:', err);
           }
-        }, 1000);
+        }, 2000); // Push Primerを表示するために少し長めに待つ
       } catch (err) {
         console.error('OneSignal初期化エラー:', err);
         setError('OneSignalの初期化に失敗しました');

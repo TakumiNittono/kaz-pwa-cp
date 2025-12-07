@@ -40,6 +40,7 @@ declare module 'react-onesignal' {
     setSubscription(unmute: boolean): Promise<any>;
     getPlayerId(): Promise<string>;
     getUserId(): Promise<string>;
+    showSlidedownPrompt?(options?: any): Promise<void>;
     initialized: boolean;
     notificationPermission: string[];
   }

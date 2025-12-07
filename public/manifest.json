@@ -1,12 +1,25 @@
 {
-  "name": "PWA Push Notification App",
-  "short_name": "PWA Push",
-  "description": "OneSignal対応のPWAアプリケーション",
+  "name": "無料特典アプリ",
+  "short_name": "無料特典",
+  "description": "無料特典を受け取れるPWAアプリケーション",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
 
