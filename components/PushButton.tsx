@@ -139,46 +139,67 @@ export default function PushButton({
 
     try {
       // 通知許可をリクエスト
+      console.log('通知許可をリクエスト中...');
       await OneSignal.registerForPushNotifications();
 
-      // 少し待ってから状態を更新
-      setTimeout(async () => {
-        try {
-          // 購読状態を更新
-          const subscription = await OneSignal.isPushNotificationsEnabled();
-          setIsSubscribed(subscription);
+      // 通知許可の状態を複数回チェック（ブラウザのダイアログでユーザーが選択するまで待つ）
+      const checkSubscription = async (attempts = 0, maxAttempts = 10) => {
+        if (attempts >= maxAttempts) {
+          console.error('通知許可の確認がタイムアウトしました');
+          setIsLoading(false);
+          return;
+        }
 
-          // Player IDを取得
+        try {
+          const subscription = await OneSignal.isPushNotificationsEnabled();
+          console.log(`通知許可状態チェック (${attempts + 1}/${maxAttempts}):`, subscription);
+
           if (subscription) {
+            // 通知許可が成功した
+            setIsSubscribed(true);
+            setIsLoading(false);
+
+            // Player IDを取得
             const userId = await OneSignal.getPlayerId();
             if (userId) {
               setPlayerId(userId);
-              
+              console.log('通知許可成功！Player ID:', userId);
+
               // 通知許可成功時のコールバックを実行
               if (onSubscribeSuccess) {
                 onSubscribeSuccess(userId);
               }
-              
+
               // リダイレクト先が指定されている場合は遷移
               if (redirectUrl) {
+                console.log('リダイレクト先:', redirectUrl);
                 setTimeout(() => {
                   // Player IDをURLパラメータとして渡す
                   const url = redirectUrl.includes('?') 
                     ? `${redirectUrl}&playerId=${userId}`
                     : `${redirectUrl}?playerId=${userId}`;
+                  console.log('ページ遷移:', url);
                   window.location.href = url;
-                }, 1000); // 1秒待ってから遷移（ユーザーに成功メッセージを見せるため）
+                }, 1500); // 1.5秒待ってから遷移（ユーザーに成功メッセージを見せるため）
               }
+            } else {
+              console.warn('Player IDが取得できませんでした');
             }
+          } else {
+            // まだ許可されていない場合、少し待ってから再チェック
+            setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 500);
           }
         } catch (err) {
-          console.error('状態更新エラー:', err);
+          console.error('状態確認エラー:', err);
+          setTimeout(() => checkSubscription(attempts + 1, maxAttempts), 500);
         }
-      }, 500);
+      };
+
+      // 初回チェックを開始
+      checkSubscription();
     } catch (err) {
       console.error('通知登録エラー:', err);
       setError('通知の登録に失敗しました');
-    } finally {
       setIsLoading(false);
     }
   };
