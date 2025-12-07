@@ -1,0 +1,12 @@
+{
+  "name": "PWA Push Notification App",
+  "short_name": "PWA Push",
+  "description": "OneSignal対応のPWAアプリケーション",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": []
+}
+
